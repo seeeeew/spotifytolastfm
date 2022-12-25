@@ -21,7 +21,7 @@
 	}
 </style>
 <ol>
-	<li>Drop your StreamingHistory*.json files here
+	<li>Drop your StreamingHistory*.json or endsong_*.json files here
 	<li>Save the resulting output.csv somewhere
 	<li>Import the CSV file to last.fm via a compatible service, for example <a href=https://universalscrobbler.com/>universalscrobbler.com</a>
 	<br><i>Note: You can probably only import 2500-3000 plays per day.</i>
@@ -31,7 +31,11 @@
 		event.preventDefault();
 		const filePromises = [...event.dataTransfer.items].filter(item => item.kind === "file").map((item) => new Promise(async resolve => {
 			const data = JSON.parse(await item.getAsFile().text());
-			resolve(data.map(entry => `"${entry.artistName.replaceAll('"', '\\"')}", "${entry.trackName.replaceAll('"', '\\"')}"`));
+			resolve(data.map(entry => {
+				const artist = entry.master_metadata_album_artist_name || entry.artistName;
+				const track = entry.master_metadata_track_name || entry.trackName;
+				if (artist != null && track != null) return `"${artist.replaceAll('"', '\\"')}", "${track.replaceAll('"', '\\"')}"`;
+			}).filter(element => element != null));
 		}));
 		Promise.all(filePromises).then(results => {
 			const content = [].concat(...results).join("\n");
